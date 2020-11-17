@@ -44,3 +44,33 @@ Here is a basic diagram of how the 5 services will work:
     - so run on a high port of your choosing (I choose 5001), container listens on 80
     - on backend network
     - 1 replica
+
+
+Answer. Run it at https://labs.play-with-docker.com/
+
+# Create swarm
+On node1
+docker swarm init --advertise-addr [ip address]
+
+On the remaining nodes
+docker swarm joing (get the command from node1)
+
+# Create networks
+docker network create --driver overlay frontend
+docker network create --driver overlay backend
+
+# Create services
+# Vote
+docker service create --name vote -p 80:80 --network frontend --replicas 2 bretfisher/examplevotingapp_vote
+
+# Redis
+docker service create --name redis --network frontend --replicas 1 redis:3.2
+
+# Worker
+docker service create --name worker --network frontend --network backend --replicas 1 bretfisher/examplevotingapp_worker:java
+
+# db
+docker service create --name db --network backend --replicas 1 -e POSTGRES_HOST_AUTH_METHOD=trust --mount type=volume,source=db-data,target=/var/lib/postgresql/data postgres:9.4
+
+# Result
+docker service create --name result --network backend --replicas 1 -p 5001:80 bretfisher/examplevotingapp_result
